@@ -2,10 +2,12 @@ from rest_framework import viewsets, generics, permissions
 from .models import Course, Lesson
 from .serializers import CourseSerializer, LessonSerializer
 from .permissions import IsNotModerator, IsModeratorOrOwner, IsOwnerOrReadOnly
+from .paginators import CoursePaginator, LessonPaginator
 
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
+    pagination_class = CoursePaginator
 
     def get_permissions(self):
         if self.action == 'create':
@@ -31,6 +33,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 
 class LessonListCreateView(generics.ListCreateAPIView):
     serializer_class = LessonSerializer
+    pagination_class = LessonPaginator
 
     def get_permissions(self):
         if self.request.method == 'POST':
