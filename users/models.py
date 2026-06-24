@@ -33,20 +33,40 @@ class User(AbstractUser):
     def __str__(self):
         return self.email
 
+
 class Payment(models.Model):
     PAYMENT_METHODS = [
         ('cash', 'Наличные'),
         ('transfer', 'Перевод на счет'),
+        ('stripe', 'Stripe'),
     ]
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payments')
+    STATUS_CHOICES = [
+        ('pending', 'Ожидание оплаты'),
+        ('paid', 'Оплачено'),
+        ('failed', 'Ошибка'),
+        ('canceled', 'Отменено'),
+    ]
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='payments')
     payment_date = models.DateTimeField(auto_now_add=True)
-    course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True, related_name='payments')
-    lesson = models.ForeignKey(Lesson, on_delete=models.SET_NULL, null=True, blank=True, related_name='payments')
+    course = models.ForeignKey('materials.Course', on_delete=models.SET_NULL, null=True, blank=True,
+                               related_name='payments')
+    lesson = models.ForeignKey('materials.Lesson', on_delete=models.SET_NULL, null=True, blank=True,
+                               related_name='payments')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS, default='stripe')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+
+    # Поля для Stripe (или имитации)
+    stripe_product_id = models.CharField(max_length=255, blank=True, null=True)
+    stripe_price_id = models.CharField(max_length=255, blank=True, null=True)
+    stripe_session_id = models.CharField(max_length=255, blank=True, null=True)
+    payment_url = models.URLField(blank=True, null=True)
 
     class Meta:
         ordering = ['-payment_date']
+
+    def __str__(self):
+        return f"Payment {self.id} - {self.user.email} - {self.amount}"
 
     def __str__(self):
         return f"Payment {self.id} - {self.user.email} - {self.amount}"
