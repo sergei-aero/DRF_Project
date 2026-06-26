@@ -3,6 +3,7 @@ from .models import Course, Lesson
 from .serializers import CourseSerializer, LessonSerializer
 from .permissions import IsNotModerator, IsModeratorOrOwner, IsOwnerOrReadOnly
 from .paginators import CoursePaginator, LessonPaginator
+from .tasks import send_course_update_email
 
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
@@ -30,6 +31,12 @@ class CourseViewSet(viewsets.ModelViewSet):
         if user.groups.filter(name='Moderator').exists():
             return Course.objects.all()
         return Course.objects.filter(owner=user)
+
+    def perform_update(self, serializer):
+        # Сохраняем обновлённый объект
+        instance = serializer.save()
+        # Запускаем асинхронную задачу на отправку писем
+        send_course_update_email.delay(instance.id)
 
 class LessonListCreateView(generics.ListCreateAPIView):
     serializer_class = LessonSerializer
